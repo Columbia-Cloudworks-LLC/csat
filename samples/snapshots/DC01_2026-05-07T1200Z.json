@@ -1,0 +1,177 @@
+{
+  "csat_version": "1.0",
+  "schema_version": 1,
+  "collected_at_utc": "2026-05-07T12:56:48Z",
+  "collector": {
+    "platform": "windows",
+    "script_version": "1.0",
+    "run_as": "ADMIN\\nick",
+    "elevated": true
+  },
+  "collection_warnings": [],
+  "identity": {
+    "hostname": "DC01",
+    "fqdn": "dc01.acme.local",
+    "domain_or_workgroup": "acme.local",
+    "machine_guid": "11111111-2222-3333-4444-555555555555",
+    "os_name": "Windows Server 2019 Standard",
+    "os_version": "10.0.17763",
+    "os_build": "17763",
+    "kernel": "",
+    "install_date": "2023-01-23T12:56:48Z",
+    "last_boot_utc": "2026-04-23T12:56:48Z",
+    "uptime_seconds": 1209600,
+    "timezone": "Central Standard Time"
+  },
+  "hardware": {
+    "manufacturer": "Dell Inc.",
+    "model": "PowerEdge R740",
+    "serial": "ABC1234",
+    "bios_version": "2.18.1",
+    "cpu_model": "Intel(R) Xeon(R) Silver 4214",
+    "cpu_sockets": 2,
+    "cpu_cores": 24,
+    "cpu_logical": 48,
+    "memory_gb": 128.0,
+    "is_virtual": false,
+    "hypervisor": ""
+  },
+  "storage": [
+    {
+      "device": "C:",
+      "mount_or_letter": "C:",
+      "filesystem": "NTFS",
+      "size_gb": 200.0,
+      "free_gb": 87.4,
+      "percent_free": 43.7
+    },
+    {
+      "device": "D:",
+      "mount_or_letter": "D:",
+      "filesystem": "NTFS",
+      "size_gb": 1000.0,
+      "free_gb": 612.1,
+      "percent_free": 61.2
+    }
+  ],
+  "network": [
+    {
+      "interface": "Intel(R) Ethernet I350",
+      "mac": "AA:BB:CC:00:00:01",
+      "ipv4": [
+        "10.10.1.10"
+      ],
+      "ipv6": [],
+      "subnet": [
+        "255.255.255.0"
+      ],
+      "gateway": [
+        "10.10.1.1"
+      ],
+      "dns_servers": [
+        "10.10.1.10",
+        "8.8.8.8"
+      ],
+      "dhcp_enabled": false,
+      "link_speed_mbps": 1000
+    }
+  ],
+  "roles_features": [
+    "AD-Domain-Services",
+    "DNS",
+    "DHCP",
+    "FileAndStorage-Services",
+    "GPMC",
+    "RSAT-AD-Tools",
+    "Telnet-Client"
+  ],
+  "services": [
+    {
+      "name": "NTDS",
+      "display_name": "Active Directory Domain Services",
+      "state": "running",
+      "start_mode": "auto",
+      "account": "LocalSystem"
+    },
+    {
+      "name": "DNS",
+      "display_name": "DNS Server",
+      "state": "running",
+      "start_mode": "auto",
+      "account": "LocalSystem"
+    },
+    {
+      "name": "DHCPServer",
+      "display_name": "DHCP Server",
+      "state": "running",
+      "start_mode": "auto",
+      "account": "NT AUTHORITY\\NetworkService"
+    },
+    {
+      "name": "Spooler",
+      "display_name": "Print Spooler",
+      "state": "stopped",
+      "start_mode": "disabled",
+      "account": "LocalSystem"
+    },
+    {
+      "name": "W32Time",
+      "display_name": "Windows Time",
+      "state": "running",
+      "start_mode": "auto",
+      "account": "NT AUTHORITY\\LocalService"
+    }
+  ],
+  "scheduled_tasks": [
+    {
+      "name": "AD-Backup",
+      "path": "\\Acme\\",
+      "state": "ready",
+      "last_run": "2026-05-06T12:56:48Z",
+      "next_run": "2026-05-08T12:56:48Z",
+      "run_as": "ACME\\svc-backup",
+      "action": "C:\\Scripts\\backup-ad.ps1"
+    }
+  ],
+  "local_accounts": [
+    {
+      "name": "Administrator",
+      "enabled": true,
+      "is_admin": true,
+      "last_logon": "2026-05-05T12:56:48Z",
+      "password_age_days": 87
+    },
+    {
+      "name": "Guest",
+      "enabled": false,
+      "is_admin": false,
+      "last_logon": "",
+      "password_age_days": -1
+    }
+  ],
+  "admin_group_members": [
+    "ACME\\Domain Admins",
+    "Administrator",
+    "ACME\\nick"
+  ],
+  "shares": [
+    {
+      "name": "NETLOGON",
+      "path": "C:\\Windows\\SYSVOL\\sysvol\\acme.local\\SCRIPTS",
+      "description": "Logon server share"
+    },
+    {
+      "name": "SYSVOL",
+      "path": "C:\\Windows\\SYSVOL\\sysvol",
+      "description": "Logon server share"
+    }
+  ],
+  "patches": {
+    "last_update_utc": "2026-04-19T12:56:48Z",
+    "pending_reboot": false,
+    "recent_kbs_or_packages": [
+      "KB5034441 (2026-04-15)",
+      "KB5034440 (2026-04-15)"
+    ]
+  }
+}

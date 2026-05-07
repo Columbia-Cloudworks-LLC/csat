@@ -1,0 +1,154 @@
+{
+  "csat_version": "1.0",
+  "schema_version": 1,
+  "collected_at_utc": "2026-05-07T12:56:48Z",
+  "collector": {
+    "platform": "linux",
+    "script_version": "1.0",
+    "run_as": "root",
+    "elevated": true
+  },
+  "collection_warnings": [],
+  "identity": {
+    "hostname": "db01",
+    "fqdn": "db01.acme.local",
+    "domain_or_workgroup": "acme.local",
+    "machine_guid": "fedcba0987654321fedcba0987654321",
+    "os_name": "Red Hat Enterprise Linux 9.3",
+    "os_version": "9.3",
+    "os_build": "Plow",
+    "kernel": "5.14.0-362.13.1.el9_3.x86_64",
+    "install_date": "2026-01-07T12:56:48Z",
+    "last_boot_utc": "2026-04-30T12:56:48Z",
+    "uptime_seconds": 604800,
+    "timezone": "America/Chicago"
+  },
+  "hardware": {
+    "manufacturer": "Dell Inc.",
+    "model": "PowerEdge R650",
+    "serial": "DBSRV01",
+    "bios_version": "1.13.4",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6354",
+    "cpu_sockets": 2,
+    "cpu_cores": 36,
+    "cpu_logical": 72,
+    "memory_gb": 384.0,
+    "is_virtual": false,
+    "hypervisor": ""
+  },
+  "storage": [
+    {
+      "device": "/dev/sda1",
+      "mount_or_letter": "/",
+      "filesystem": "xfs",
+      "size_gb": 100.0,
+      "free_gb": 64.5,
+      "percent_free": 64.5
+    },
+    {
+      "device": "/dev/sdb1",
+      "mount_or_letter": "/var/lib/postgresql",
+      "filesystem": "xfs",
+      "size_gb": 2048.0,
+      "free_gb": 956.3,
+      "percent_free": 46.7
+    }
+  ],
+  "network": [
+    {
+      "interface": "eno1",
+      "mac": "00:1c:c4:aa:bb:02",
+      "ipv4": [
+        "10.10.2.60"
+      ],
+      "ipv6": [],
+      "subnet": [
+        "10.10.2.60/24"
+      ],
+      "gateway": [
+        "10.10.2.1"
+      ],
+      "dns_servers": [
+        "10.10.1.10"
+      ],
+      "dhcp_enabled": false,
+      "link_speed_mbps": 10000
+    }
+  ],
+  "roles_features": [
+    "role:postgres",
+    "role:ssh",
+    "svc:postgresql",
+    "svc:sshd"
+  ],
+  "services": [
+    {
+      "name": "postgresql",
+      "display_name": "PostgreSQL database server",
+      "state": "active",
+      "start_mode": "enabled",
+      "account": "postgres"
+    },
+    {
+      "name": "sshd",
+      "display_name": "OpenSSH server daemon",
+      "state": "active",
+      "start_mode": "enabled",
+      "account": "root"
+    },
+    {
+      "name": "firewalld",
+      "display_name": "firewalld - dynamic firewall daemon",
+      "state": "active",
+      "start_mode": "enabled",
+      "account": "root"
+    }
+  ],
+  "scheduled_tasks": [
+    {
+      "name": "pg_dump.timer",
+      "path": "/systemd/timers",
+      "state": "enabled",
+      "last_run": "2026-05-07T04:56:48Z",
+      "next_run": "2026-05-08T04:56:48Z",
+      "run_as": "postgres",
+      "action": "pg_dump.timer"
+    }
+  ],
+  "local_accounts": [
+    {
+      "name": "root",
+      "enabled": true,
+      "is_admin": true,
+      "last_logon": "2026-05-04T12:56:48Z",
+      "password_age_days": 119
+    },
+    {
+      "name": "postgres",
+      "enabled": true,
+      "is_admin": false,
+      "last_logon": "2026-05-07T04:56:48Z",
+      "password_age_days": 119
+    },
+    {
+      "name": "dba",
+      "enabled": true,
+      "is_admin": true,
+      "last_logon": "2026-05-06T12:56:48Z",
+      "password_age_days": 32
+    }
+  ],
+  "admin_group_members": [
+    "root",
+    "dba"
+  ],
+  "shares": [],
+  "patches": {
+    "last_update_utc": "2026-05-05T12:56:48Z",
+    "pending_reboot": false,
+    "recent_kbs_or_packages": [
+      "postgresql-server-15.5",
+      "kernel-5.14.0-362.18"
+    ]
+  }
+}

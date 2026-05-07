@@ -1,0 +1,466 @@
+#!/usr/bin/env python3
+"""
+CSAT - Computer Situational Awareness Tool. Aggregator CLI.
+
+Reads CSAT JSON snapshots and produces a normalized support matrix
+as XLSX (and optional CSVs). Also supports diffing two snapshots.
+
+Usage:
+    csat build <snapshots_dir> [-o matrix.xlsx] [--csv-dir DIR] [--history]
+    csat diff <old.json> <new.json>
+    csat info <snapshot.json>
+
+Project: CSAT - Computer Situational Awareness Tool
+Owner:   Columbia Cloudworks LLC
+License: MIT
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
+
+CSAT_VERSION = "1.0"
+SUPPORTED_SCHEMAS = {1}
+
+
+# ---------- Loading ----------
+
+def load_snapshot(path: Path) -> Dict[str, Any]:
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    sv = data.get("schema_version")
+    if sv not in SUPPORTED_SCHEMAS:
+        print(f"WARNING: {path.name} schema_version={sv}, supported={sorted(SUPPORTED_SCHEMAS)}", file=sys.stderr)
+    return data
+
+
+def load_directory(directory: Path) -> List[Tuple[Path, Dict[str, Any]]]:
+    snaps: List[Tuple[Path, Dict[str, Any]]] = []
+    for p in sorted(directory.glob("*.json")):
+        try:
+            snaps.append((p, load_snapshot(p)))
+        except json.JSONDecodeError as e:
+            print(f"ERROR: {p.name} is not valid JSON: {e}", file=sys.stderr)
+        except Exception as e:
+            print(f"ERROR: failed to read {p.name}: {e}", file=sys.stderr)
+    return snaps
+
+
+def select_latest_per_host(snaps: List[Tuple[Path, Dict[str, Any]]]) -> List[Tuple[Path, Dict[str, Any]]]:
+    by_host: Dict[str, Tuple[Path, Dict[str, Any]]] = {}
+    for path, data in snaps:
+        host = data.get("identity", {}).get("hostname", path.stem)
+        ts = data.get("collected_at_utc", "")
+        if host not in by_host or ts > by_host[host][1].get("collected_at_utc", ""):
+            by_host[host] = (path, data)
+    return list(by_host.values())
+
+
+# ---------- Row builders ----------
+
+def overview_row(data: Dict[str, Any]) -> Dict[str, Any]:
+    i = data.get("identity", {}) or {}
+    h = data.get("hardware", {}) or {}
+    c = data.get("collector", {}) or {}
+    p = data.get("patches", {}) or {}
+    nets = data.get("network", []) or []
+    storage = data.get("storage", []) or []
+
+    primary_ip = ""
+    primary_gw = ""
+    primary_dns = ""
+    for n in nets:
+        ipv4 = n.get("ipv4") or []
+        if ipv4:
+            primary_ip = ipv4[0]
+            gws = n.get("gateway") or []
+            primary_gw = gws[0] if gws else ""
+            dns = n.get("dns_servers") or []
+            primary_dns = ", ".join(dns)
+            break
+
+    total_gb = sum(float(s.get("size_gb") or 0) for s in storage)
+    free_gb = sum(float(s.get("free_gb") or 0) for s in storage)
+
+    admins = data.get("admin_group_members", []) or []
+    roles = data.get("roles_features", []) or []
+    services_running = sum(1 for s in (data.get("services") or []) if (s.get("state") or "").lower() in ("running", "active"))
+
+    uptime_seconds = i.get("uptime_seconds") or 0
+    try:
+        uptime_days = round(int(uptime_seconds) / 86400, 1)
+    except Exception:
+        uptime_days = 0.0
+
+    return {
+        "hostname": i.get("hostname", ""),
+        "fqdn": i.get("fqdn", ""),
+        "platform": c.get("platform", ""),
+        "domain_or_workgroup": i.get("domain_or_workgroup", ""),
+        "os_name": i.get("os_name", ""),
+        "os_version": i.get("os_version", ""),
+        "os_build": i.get("os_build", ""),
+        "manufacturer": h.get("manufacturer", ""),
+        "model": h.get("model", ""),
+        "serial": h.get("serial", ""),
+        "is_virtual": h.get("is_virtual", False),
+        "hypervisor": h.get("hypervisor", ""),
+        "cpu_model": h.get("cpu_model", ""),
+        "cpu_cores": h.get("cpu_cores", 0),
+        "cpu_logical": h.get("cpu_logical", 0),
+        "memory_gb": h.get("memory_gb", 0),
+        "primary_ipv4": primary_ip,
+        "default_gateway": primary_gw,
+        "dns_servers": primary_dns,
+        "total_disk_gb": round(total_gb, 2),
+        "free_disk_gb": round(free_gb, 2),
+        "uptime_days": uptime_days,
+        "last_boot_utc": i.get("last_boot_utc", ""),
+        "install_date": i.get("install_date", ""),
+        "patch_last_update_utc": p.get("last_update_utc", ""),
+        "pending_reboot": p.get("pending_reboot", False),
+        "running_services": services_running,
+        "local_admins": ", ".join(admins),
+        "detected_roles": ", ".join(roles[:10]),
+        "warnings_count": len(data.get("collection_warnings") or []),
+        "collected_at_utc": data.get("collected_at_utc", ""),
+        "snapshot_file": data.get("__source_file__", ""),
+    }
+
+
+def network_rows(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    host = data.get("identity", {}).get("hostname", "")
+    out = []
+    for n in data.get("network", []) or []:
+        out.append({
+            "hostname": host,
+            "interface": n.get("interface", ""),
+            "mac": n.get("mac", ""),
+            "ipv4": ", ".join(n.get("ipv4") or []),
+            "ipv6": ", ".join(n.get("ipv6") or []),
+            "subnet": ", ".join(n.get("subnet") or []),
+            "gateway": ", ".join(n.get("gateway") or []),
+            "dns_servers": ", ".join(n.get("dns_servers") or []),
+            "dhcp_enabled": n.get("dhcp_enabled", False),
+            "link_speed_mbps": n.get("link_speed_mbps", 0),
+        })
+    return out
+
+
+def storage_rows(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    host = data.get("identity", {}).get("hostname", "")
+    out = []
+    for s in data.get("storage", []) or []:
+        out.append({
+            "hostname": host,
+            "device": s.get("device", ""),
+            "mount_or_letter": s.get("mount_or_letter", ""),
+            "filesystem": s.get("filesystem", ""),
+            "size_gb": s.get("size_gb", 0),
+            "free_gb": s.get("free_gb", 0),
+            "percent_free": s.get("percent_free", 0),
+        })
+    return out
+
+
+def services_rows(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    host = data.get("identity", {}).get("hostname", "")
+    out = []
+    for s in data.get("services", []) or []:
+        out.append({
+            "hostname": host,
+            "name": s.get("name", ""),
+            "display_name": s.get("display_name", ""),
+            "state": s.get("state", ""),
+            "start_mode": s.get("start_mode", ""),
+            "account": s.get("account", ""),
+        })
+    return out
+
+
+def admins_rows(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    host = data.get("identity", {}).get("hostname", "")
+    out = []
+    for a in data.get("admin_group_members", []) or []:
+        out.append({"hostname": host, "admin": a})
+    return out
+
+
+def shares_rows(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    host = data.get("identity", {}).get("hostname", "")
+    out = []
+    for s in data.get("shares", []) or []:
+        out.append({
+            "hostname": host,
+            "name": s.get("name", ""),
+            "path": s.get("path", ""),
+            "description": s.get("description", ""),
+        })
+    return out
+
+
+def tasks_rows(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    host = data.get("identity", {}).get("hostname", "")
+    out = []
+    for t in data.get("scheduled_tasks", []) or []:
+        out.append({
+            "hostname": host,
+            "name": t.get("name", ""),
+            "path": t.get("path", ""),
+            "state": t.get("state", ""),
+            "last_run": t.get("last_run", ""),
+            "next_run": t.get("next_run", ""),
+            "run_as": t.get("run_as", ""),
+            "action": t.get("action", ""),
+        })
+    return out
+
+
+def warnings_rows(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    host = data.get("identity", {}).get("hostname", "")
+    return [{"hostname": host, "warning": w} for w in (data.get("collection_warnings") or [])]
+
+
+# ---------- Output ----------
+
+def write_xlsx(out_path: Path, sheets: Dict[str, List[Dict[str, Any]]]) -> None:
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        print("ERROR: openpyxl is required. Install with: pip install openpyxl", file=sys.stderr)
+        sys.exit(2)
+
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="1F4E78")
+    header_align = Alignment(vertical="center")
+
+    for name, rows in sheets.items():
+        ws = wb.create_sheet(name)
+        if not rows:
+            ws.append(["(no data)"])
+            continue
+        headers = list(rows[0].keys())
+        ws.append(headers)
+        for cell in ws[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_align
+        for r in rows:
+            ws.append([r.get(h, "") for h in headers])
+
+        # Auto-fit columns (capped width)
+        for idx, h in enumerate(headers, start=1):
+            max_len = len(str(h))
+            for r in rows:
+                v = r.get(h, "")
+                vl = len(str(v)) if v is not None else 0
+                if vl > max_len:
+                    max_len = vl
+            ws.column_dimensions[get_column_letter(idx)].width = min(max(max_len + 2, 10), 60)
+
+        ws.freeze_panes = "A2"
+        ws.auto_filter.ref = ws.dimensions
+
+    wb.save(out_path)
+
+
+def write_csv_dir(directory: Path, sheets: Dict[str, List[Dict[str, Any]]]) -> None:
+    import csv
+    directory.mkdir(parents=True, exist_ok=True)
+    for name, rows in sheets.items():
+        path = directory / f"{name.lower()}.csv"
+        if not rows:
+            path.write_text("", encoding="utf-8")
+            continue
+        with path.open("w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            w.writeheader()
+            w.writerows(rows)
+
+
+# ---------- Commands ----------
+
+def cmd_build(args: argparse.Namespace) -> int:
+    src = Path(args.snapshots_dir)
+    if not src.is_dir():
+        print(f"ERROR: not a directory: {src}", file=sys.stderr)
+        return 2
+
+    snaps = load_directory(src)
+    if not snaps:
+        print(f"ERROR: no JSON snapshots found in {src}", file=sys.stderr)
+        return 2
+
+    if not args.history:
+        snaps = select_latest_per_host(snaps)
+
+    for path, data in snaps:
+        data["__source_file__"] = path.name
+
+    overview = [overview_row(d) for _, d in snaps]
+    network = [r for _, d in snaps for r in network_rows(d)]
+    storage = [r for _, d in snaps for r in storage_rows(d)]
+    services = [r for _, d in snaps for r in services_rows(d)]
+    admins = [r for _, d in snaps for r in admins_rows(d)]
+    shares = [r for _, d in snaps for r in shares_rows(d)]
+    tasks = [r for _, d in snaps for r in tasks_rows(d)]
+    warnings = [r for _, d in snaps for r in warnings_rows(d)]
+
+    sheets = {
+        "Overview": overview,
+        "Network": network,
+        "Storage": storage,
+        "Services": services,
+        "Admins": admins,
+        "Shares": shares,
+        "Tasks": tasks,
+        "Warnings": warnings,
+    }
+
+    out_path = Path(args.output)
+    write_xlsx(out_path, sheets)
+    print(f"Wrote {out_path}")
+    print(f"  Hosts: {len(overview)}")
+    print(f"  Network rows: {len(network)}")
+    print(f"  Storage rows: {len(storage)}")
+    print(f"  Service rows: {len(services)}")
+    print(f"  Warnings:     {len(warnings)}")
+
+    if args.csv_dir:
+        write_csv_dir(Path(args.csv_dir), sheets)
+        print(f"Wrote CSVs to {args.csv_dir}")
+
+    return 0
+
+
+def diff_value(label: str, old: Any, new: Any, out: List[str]) -> None:
+    if old != new:
+        out.append(f"  ~ {label}: {old!r} -> {new!r}")
+
+
+def diff_set(label: str, old: List[str], new: List[str], out: List[str]) -> None:
+    o, n = set(old or []), set(new or [])
+    added = sorted(n - o)
+    removed = sorted(o - n)
+    if added:
+        out.append(f"  + {label} added: {', '.join(added)}")
+    if removed:
+        out.append(f"  - {label} removed: {', '.join(removed)}")
+
+
+def cmd_diff(args: argparse.Namespace) -> int:
+    old = load_snapshot(Path(args.old))
+    new = load_snapshot(Path(args.new))
+
+    out: List[str] = []
+    out.append(f"CSAT diff: {args.old} -> {args.new}")
+    out.append("=" * 72)
+
+    oi, ni = old.get("identity", {}), new.get("identity", {})
+    for k in ("hostname", "fqdn", "domain_or_workgroup", "os_name", "os_version", "os_build", "last_boot_utc"):
+        diff_value(f"identity.{k}", oi.get(k), ni.get(k), out)
+
+    oh, nh = old.get("hardware", {}), new.get("hardware", {})
+    for k in ("manufacturer", "model", "serial", "cpu_model", "cpu_cores", "memory_gb", "is_virtual", "hypervisor"):
+        diff_value(f"hardware.{k}", oh.get(k), nh.get(k), out)
+
+    diff_set("admin_group_members",
+             old.get("admin_group_members") or [],
+             new.get("admin_group_members") or [],
+             out)
+    diff_set("roles_features",
+             old.get("roles_features") or [],
+             new.get("roles_features") or [],
+             out)
+
+    def svc_index(d):
+        return {s.get("name"): s for s in (d.get("services") or [])}
+    os_, ns_ = svc_index(old), svc_index(new)
+    for name in sorted(set(os_) | set(ns_)):
+        if name not in os_:
+            out.append(f"  + service added: {name} ({ns_[name].get('state')})")
+        elif name not in ns_:
+            out.append(f"  - service removed: {name}")
+        else:
+            if os_[name].get("state") != ns_[name].get("state"):
+                out.append(f"  ~ service {name}: {os_[name].get('state')} -> {ns_[name].get('state')}")
+            if os_[name].get("start_mode") != ns_[name].get("start_mode"):
+                out.append(f"  ~ service {name} start_mode: {os_[name].get('start_mode')} -> {ns_[name].get('start_mode')}")
+
+    def disk_index(d):
+        return {s.get("mount_or_letter"): s for s in (d.get("storage") or [])}
+    od, nd = disk_index(old), disk_index(new)
+    for mount in sorted(set(od) | set(nd)):
+        if mount not in od:
+            out.append(f"  + disk added: {mount}")
+        elif mount not in nd:
+            out.append(f"  - disk removed: {mount}")
+        else:
+            try:
+                old_free = float(od[mount].get("free_gb") or 0)
+                new_free = float(nd[mount].get("free_gb") or 0)
+                if abs(old_free - new_free) >= 1.0:
+                    out.append(f"  ~ disk {mount} free_gb: {old_free} -> {new_free}")
+            except Exception:
+                pass
+
+    op, np_ = old.get("patches", {}), new.get("patches", {})
+    diff_value("patches.last_update_utc", op.get("last_update_utc"), np_.get("last_update_utc"), out)
+    diff_value("patches.pending_reboot", op.get("pending_reboot"), np_.get("pending_reboot"), out)
+
+    if len(out) <= 2:
+        out.append("  (no significant changes detected)")
+
+    print("\n".join(out))
+    return 0
+
+
+def cmd_info(args: argparse.Namespace) -> int:
+    data = load_snapshot(Path(args.snapshot))
+    i = data.get("identity", {})
+    h = data.get("hardware", {})
+    print(f"{i.get('fqdn') or i.get('hostname')}")
+    print(f"  OS:        {i.get('os_name')} ({i.get('os_version')})")
+    print(f"  Hardware:  {h.get('manufacturer')} {h.get('model')}  CPU={h.get('cpu_logical')}t  RAM={h.get('memory_gb')}GB  Virtual={h.get('is_virtual')}")
+    print(f"  Storage:   {len(data.get('storage', []))} mounts")
+    print(f"  Network:   {len(data.get('network', []))} interfaces")
+    running = sum(1 for s in data.get('services', []) if (s.get('state') or '').lower() in ('running','active'))
+    print(f"  Services:  {len(data.get('services', []))} ({running} running)")
+    print(f"  Admins:    {', '.join(data.get('admin_group_members') or [])}")
+    print(f"  Warnings:  {len(data.get('collection_warnings') or [])}")
+    return 0
+
+
+def main(argv: List[str]) -> int:
+    p = argparse.ArgumentParser(prog="csat", description=f"CSAT aggregator v{CSAT_VERSION}")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    pb = sub.add_parser("build", help="Build a support matrix XLSX from a directory of JSON snapshots")
+    pb.add_argument("snapshots_dir", help="Directory containing CSAT JSON snapshots")
+    pb.add_argument("-o", "--output", default="csat-matrix.xlsx", help="Output XLSX path (default: csat-matrix.xlsx)")
+    pb.add_argument("--csv-dir", help="Also write per-sheet CSVs to this directory")
+    pb.add_argument("--history", action="store_true", help="Include all snapshots, not just the latest per host")
+    pb.set_defaults(func=cmd_build)
+
+    pd = sub.add_parser("diff", help="Show what changed between two snapshots of the same host")
+    pd.add_argument("old", help="Older snapshot JSON")
+    pd.add_argument("new", help="Newer snapshot JSON")
+    pd.set_defaults(func=cmd_diff)
+
+    pi = sub.add_parser("info", help="Show a quick summary of one snapshot")
+    pi.add_argument("snapshot", help="Path to a snapshot JSON")
+    pi.set_defaults(func=cmd_info)
+
+    args = p.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

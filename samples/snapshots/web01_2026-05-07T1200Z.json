@@ -1,0 +1,161 @@
+{
+  "csat_version": "1.0",
+  "schema_version": 1,
+  "collected_at_utc": "2026-05-07T12:56:48Z",
+  "collector": {
+    "platform": "linux",
+    "script_version": "1.0",
+    "run_as": "root",
+    "elevated": true
+  },
+  "collection_warnings": [],
+  "identity": {
+    "hostname": "web01",
+    "fqdn": "web01.acme.local",
+    "domain_or_workgroup": "acme.local",
+    "machine_guid": "abcdef1234567890abcdef1234567890",
+    "os_name": "Ubuntu 22.04.4 LTS",
+    "os_version": "22.04",
+    "os_build": "jammy",
+    "kernel": "5.15.0-101-generic",
+    "install_date": "2025-10-09T12:56:48Z",
+    "last_boot_utc": "2026-03-26T12:56:48Z",
+    "uptime_seconds": 3628800,
+    "timezone": "America/Chicago"
+  },
+  "hardware": {
+    "manufacturer": "QEMU",
+    "model": "Standard PC",
+    "serial": "",
+    "bios_version": "1.16.0",
+    "cpu_model": "AMD EPYC 7763 64-Core",
+    "cpu_sockets": 1,
+    "cpu_cores": 4,
+    "cpu_logical": 4,
+    "memory_gb": 8.0,
+    "is_virtual": true,
+    "hypervisor": "KVM"
+  },
+  "storage": [
+    {
+      "device": "/dev/vda1",
+      "mount_or_letter": "/",
+      "filesystem": "ext4",
+      "size_gb": 50.0,
+      "free_gb": 31.2,
+      "percent_free": 62.4
+    },
+    {
+      "device": "/dev/vdb1",
+      "mount_or_letter": "/var/www",
+      "filesystem": "ext4",
+      "size_gb": 200.0,
+      "free_gb": 138.7,
+      "percent_free": 69.3
+    }
+  ],
+  "network": [
+    {
+      "interface": "ens3",
+      "mac": "52:54:00:aa:bb:01",
+      "ipv4": [
+        "10.10.2.50"
+      ],
+      "ipv6": [
+        "fe80::5054:ff:feaa:bb01"
+      ],
+      "subnet": [
+        "10.10.2.50/24"
+      ],
+      "gateway": [
+        "10.10.2.1"
+      ],
+      "dns_servers": [
+        "10.10.1.10",
+        "1.1.1.1"
+      ],
+      "dhcp_enabled": true,
+      "link_speed_mbps": 1000
+    }
+  ],
+  "roles_features": [
+    "role:http",
+    "role:https",
+    "role:ssh",
+    "svc:nginx",
+    "svc:sshd"
+  ],
+  "services": [
+    {
+      "name": "nginx",
+      "display_name": "A high performance web server",
+      "state": "active",
+      "start_mode": "enabled",
+      "account": "www-data"
+    },
+    {
+      "name": "ssh",
+      "display_name": "OpenBSD Secure Shell server",
+      "state": "active",
+      "start_mode": "enabled",
+      "account": "root"
+    },
+    {
+      "name": "ufw",
+      "display_name": "Uncomplicated firewall",
+      "state": "active",
+      "start_mode": "enabled",
+      "account": "root"
+    }
+  ],
+  "scheduled_tasks": [
+    {
+      "name": "logrotate.timer",
+      "path": "/systemd/timers",
+      "state": "enabled",
+      "last_run": "2026-05-06T22:56:48Z",
+      "next_run": "2026-05-07T22:56:48Z",
+      "run_as": "root",
+      "action": "logrotate.timer"
+    },
+    {
+      "name": "crontab:1",
+      "path": "/etc/crontab",
+      "state": "enabled",
+      "last_run": "",
+      "next_run": "",
+      "run_as": "root",
+      "action": "0 3 * * * /usr/local/bin/cert-renew.sh"
+    }
+  ],
+  "local_accounts": [
+    {
+      "name": "root",
+      "enabled": true,
+      "is_admin": true,
+      "last_logon": "2026-05-06T12:56:48Z",
+      "password_age_days": 200
+    },
+    {
+      "name": "deploy",
+      "enabled": true,
+      "is_admin": true,
+      "last_logon": "2026-05-07T08:56:48Z",
+      "password_age_days": 85
+    }
+  ],
+  "admin_group_members": [
+    "root",
+    "deploy"
+  ],
+  "shares": [],
+  "patches": {
+    "last_update_utc": "2026-05-03T12:56:48Z",
+    "pending_reboot": false,
+    "recent_kbs_or_packages": [
+      "nginx-core",
+      "openssl",
+      "libssl3"
+    ]
+  }
+}

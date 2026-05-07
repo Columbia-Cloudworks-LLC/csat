@@ -1,0 +1,22 @@
+# Snapshots and matrices contain customer infra data - never commit.
+*.json
+*.xlsx
+*.csv
+*.txt
+!samples/**/*.json
+!docs/**/*.md
+!README.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/

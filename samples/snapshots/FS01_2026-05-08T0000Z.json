@@ -1,0 +1,148 @@
+{
+  "csat_version": "1.0",
+  "schema_version": 1,
+  "collected_at_utc": "2026-05-08T00:56:48Z",
+  "collector": {
+    "platform": "windows",
+    "script_version": "1.0",
+    "run_as": "ADMIN\\nick",
+    "elevated": true
+  },
+  "collection_warnings": [
+    "E: is below 10% free space."
+  ],
+  "identity": {
+    "hostname": "FS01",
+    "fqdn": "fs01.acme.local",
+    "domain_or_workgroup": "acme.local",
+    "machine_guid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "os_name": "Windows Server 2022 Standard",
+    "os_version": "10.0.20348",
+    "os_build": "20348",
+    "kernel": "",
+    "install_date": "2025-04-02T12:56:48Z",
+    "last_boot_utc": "2026-05-07T22:56:48Z",
+    "uptime_seconds": 7200,
+    "timezone": "Central Standard Time"
+  },
+  "hardware": {
+    "manufacturer": "VMware, Inc.",
+    "model": "VMware Virtual Platform",
+    "serial": "VMware-42-..",
+    "bios_version": "VMW71.00V.20.10",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6248",
+    "cpu_sockets": 4,
+    "cpu_cores": 4,
+    "cpu_logical": 4,
+    "memory_gb": 32.0,
+    "is_virtual": true,
+    "hypervisor": "VMware"
+  },
+  "storage": [
+    {
+      "device": "C:",
+      "mount_or_letter": "C:",
+      "filesystem": "NTFS",
+      "size_gb": 100.0,
+      "free_gb": 41.2,
+      "percent_free": 41.2
+    },
+    {
+      "device": "E:",
+      "mount_or_letter": "E:",
+      "filesystem": "NTFS",
+      "size_gb": 4096.0,
+      "free_gb": 285.4,
+      "percent_free": 6.97
+    }
+  ],
+  "network": [
+    {
+      "interface": "vmxnet3 Ethernet",
+      "mac": "00:50:56:AA:BB:01",
+      "ipv4": [
+        "10.10.1.20"
+      ],
+      "ipv6": [],
+      "subnet": [
+        "255.255.255.0"
+      ],
+      "gateway": [
+        "10.10.1.1"
+      ],
+      "dns_servers": [
+        "10.10.1.10"
+      ],
+      "dhcp_enabled": false,
+      "link_speed_mbps": 10000
+    }
+  ],
+  "roles_features": [
+    "FileAndStorage-Services",
+    "FS-FileServer",
+    "FS-SMB1",
+    "Storage-Replica"
+  ],
+  "services": [
+    {
+      "name": "LanmanServer",
+      "display_name": "Server",
+      "state": "running",
+      "start_mode": "auto",
+      "account": "LocalSystem"
+    },
+    {
+      "name": "MSiSCSI",
+      "display_name": "Microsoft iSCSI Initiator Service",
+      "state": "running",
+      "start_mode": "auto",
+      "account": "LocalSystem"
+    },
+    {
+      "name": "WSearch",
+      "display_name": "Windows Search",
+      "state": "running",
+      "start_mode": "auto",
+      "account": "LocalSystem"
+    }
+  ],
+  "scheduled_tasks": [],
+  "local_accounts": [
+    {
+      "name": "Administrator",
+      "enabled": true,
+      "is_admin": true,
+      "last_logon": "2026-04-27T12:56:48Z",
+      "password_age_days": 412
+    }
+  ],
+  "admin_group_members": [
+    "ACME\\Domain Admins",
+    "Administrator",
+    "ACME\\contractor-jdoe"
+  ],
+  "shares": [
+    {
+      "name": "Shared",
+      "path": "E:\\Shared",
+      "description": "Department shared folder"
+    },
+    {
+      "name": "Profiles",
+      "path": "E:\\Profiles",
+      "description": "Roaming user profiles"
+    },
+    {
+      "name": "Backups",
+      "path": "E:\\Backups",
+      "description": ""
+    }
+  ],
+  "patches": {
+    "last_update_utc": "2026-05-07T22:56:48Z",
+    "pending_reboot": false,
+    "recent_kbs_or_packages": [
+      "KB5034441 (2026-05-02)"
+    ]
+  }
+}
