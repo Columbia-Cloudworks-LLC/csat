@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-bash:
+    name: Lint Linux collector
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash syntax check
+        run: bash -n collectors/csat-collect.sh
+      - name: shellcheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: ./collectors
+          severity: warning
+        env:
+          SHELLCHECK_OPTS: -e SC1091 -e SC2155
+
+  parse-powershell:
+    name: Parse Windows collector
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PowerShell parse check
+        shell: pwsh
+        run: |
+          $errors = $null
+          $tokens = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            "$PWD/collectors/csat-collect.ps1",
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors -and $errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
+          Write-Host "Parse OK ($($tokens.Count) tokens)"
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          $issues = Invoke-ScriptAnalyzer -Path collectors/csat-collect.ps1 -Severity @('Error','Warning')
+          if ($issues) {
+            $issues | Format-Table -AutoSize
+            $errCount = ($issues | Where-Object { $_.Severity -eq 'Error' }).Count
+            if ($errCount -gt 0) { exit 1 }
+            Write-Host "::warning::$($issues.Count) PSScriptAnalyzer warnings (no errors)"
+          } else {
+            Write-Host "PSScriptAnalyzer clean"
+          }
+
+  smoke-collector-linux:
+    name: Smoke run Linux collector
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run collector against the runner
+        run: |
+          chmod +x collectors/csat-collect.sh
+          mkdir -p /tmp/csat-out
+          ./collectors/csat-collect.sh -o /tmp/csat-out -y
+          ls -la /tmp/csat-out
+      - name: Validate JSON output
+        run: |
+          set -e
+          for f in /tmp/csat-out/*.json; do
+            python3 -c "import json,sys; d=json.load(open('$f'));
+          assert d['schema_version']==1, 'bad schema'
+          assert d['collector']['platform']=='linux', 'bad platform'
+          assert d['identity']['hostname'], 'missing hostname'
+          for k in ('identity','hardware','storage','network','services','local_accounts','admin_group_members','patches','collection_warnings'):
+              assert k in d, f'missing key {k}'
+          print(f'$f schema={d[\"schema_version\"]} hostname={d[\"identity\"][\"hostname\"]}  storage={len(d[\"storage\"])} services={len(d[\"services\"])}')"
+          done
+
+  smoke-aggregator:
+    name: Smoke run aggregator
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip install -r aggregator/requirements.txt
+      - name: csat info on every sample
+        run: |
+          for f in samples/snapshots/*.json; do
+            python3 aggregator/csat info "$f"
+          done
+      - name: csat build full matrix
+        run: |
+          python3 aggregator/csat build samples/snapshots -o /tmp/matrix.xlsx --csv-dir /tmp/csv
+          test -s /tmp/matrix.xlsx
+          ls /tmp/csv
+      - name: csat diff round-trip
+        run: |
+          python3 aggregator/csat diff \
+            samples/snapshots/FS01_2026-05-07T1200Z.json \
+            samples/snapshots/FS01_2026-05-08T0000Z.json \
+            | tee /tmp/diff.out
+          grep -q "contractor-jdoe" /tmp/diff.out
+          grep -q "service added: WSearch" /tmp/diff.out
+      - name: Verify XLSX structure
+        run: |
+          python3 - <<'PY'
+          from openpyxl import load_workbook
+          wb = load_workbook('/tmp/matrix.xlsx')
+          expected = {'Overview','Network','Storage','Services','Admins','Shares','Tasks','Warnings'}
+          missing = expected - set(wb.sheetnames)
+          assert not missing, f'missing sheets: {missing}'
+          ov = wb['Overview']
+          assert ov.max_row >= 5, f'Overview rows = {ov.max_row}'
+          print('Sheets:', wb.sheetnames)
+          print('Overview rows:', ov.max_row)
+          PY

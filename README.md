@@ -1,5 +1,12 @@
 # CSAT — Computer Situational Awareness Tool
 
+[![CI](https://github.com/Columbia-Cloudworks-LLC/csat/actions/workflows/ci.yml/badge.svg)](https://github.com/Columbia-Cloudworks-LLC/csat/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/Columbia-Cloudworks-LLC/csat?display_name=tag&sort=semver)](https://github.com/Columbia-Cloudworks-LLC/csat/releases)
+[![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#)
+[![Bash](https://img.shields.io/badge/Bash-4%2B-4EAA25?logo=gnubash&logoColor=white)](#)
+[![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?logo=python&logoColor=white)](#)
+
 **Get any admin up to speed in any environment, fast.**
 
 CSAT is a portable, agentless inventory toolkit for MSPs and sysadmins who inherit poorly documented servers. Run a single script on a host with the highest privilege you have, get a normalized JSON snapshot plus a human-readable brief. Feed any number of snapshots to the aggregator and get a single source-of-truth spreadsheet — your support matrix.

@@ -230,14 +230,12 @@ collect_storage() {
     if have df; then
         # POSIX block-size 1K, skip pseudo filesystems
         while IFS= read -r line; do
-            local fs size used avail pct mount
-            fs="$(echo "$line"   | awk '{print $1}')"
-            size="$(echo "$line" | awk '{print $2}')"
-            used="$(echo "$line" | awk '{print $3}')"
-            avail="$(echo "$line" | awk '{print $4}')"
-            mount="$(echo "$line" | awk '{print $6}')"
-            local fstype
+            local fs size avail mount fstype
+            fs="$(echo "$line"     | awk '{print $1}')"
+            size="$(echo "$line"   | awk '{print $2}')"
+            avail="$(echo "$line"  | awk '{print $4}')"
             fstype="$(echo "$line" | awk '{print $5}')"
+            mount="$(echo "$line"  | awk '{print $6}')"
 
             local size_gb avail_gb pct_free
             size_gb="$(awk -v k="$size" 'BEGIN{printf "%.2f", k/1024/1024}')"
@@ -563,7 +561,9 @@ collect_patches() {
 }
 
 write_brief() {
-    local snapshot_file="$1" txt_file="$2"
+    local txt_file="$2"
+    # snapshot_file (positional $1) is reserved for future cross-reference
+    : "${1:-}"
     # Keep brief simple - parse selected fields using grep/python if available; else basic shell
     {
         echo "CSAT Snapshot - $HOSTNAME"
@@ -592,7 +592,9 @@ write_brief() {
         echo ""
         echo "NETWORK"
         if have ip; then
-            for iface in $(ls /sys/class/net 2>/dev/null); do
+            local iface ips mac
+            for ifpath in /sys/class/net/*; do
+                iface="$(basename "$ifpath")"
                 [ "$iface" = "lo" ] && continue
                 ips="$(ip -o -4 addr show dev "$iface" 2>/dev/null | awk '{print $4}' | tr '\n' ' ')"
                 mac="$(cat "/sys/class/net/$iface/address" 2>/dev/null)"

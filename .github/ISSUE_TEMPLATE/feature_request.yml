@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest a new collection field, output, or workflow
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - New schema field
+        - New collector platform
+        - New aggregator output
+        - New CLI command
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What gap does this fill in real MSP / sysadmin work?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How would it work? Be concrete.
+    validations:
+      required: true
+  - type: textarea
+    id: schema
+    attributes:
+      label: Schema impact
+      description: If this changes `csat-schema`, sketch the new fields. Note whether it is a breaking change.
