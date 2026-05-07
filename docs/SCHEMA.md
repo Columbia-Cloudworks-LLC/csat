@@ -27,7 +27,7 @@ All collectors emit JSON conforming to this schema. The aggregator validates `sc
 
 | Field | Type | Notes |
 |---|---|---|
-| `platform` | string | `"windows"` or `"linux"` |
+| `platform` | string | `"windows"` (PowerShell collector), `"windows-legacy"` (VBScript collector, v1.2+), `"linux"` |
 | `script_version` | string | Collector version |
 | `run_as` | string | User the collector ran as |
 | `elevated` | bool | True if running with admin/root |
