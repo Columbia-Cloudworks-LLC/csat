@@ -17,6 +17,8 @@ Owned by Columbia Cloudworks LLC. MIT licensed.
 
 You walk into a new customer environment. You have admin creds. You have a list of hostnames and IPs. You have no idea what any of these boxes actually do. CSAT answers "what is this server" in under 60 seconds, and produces an artifact you can share with the rest of your team.
 
+**Legacy support is a first-class feature.** Modern tooling has abandoned the long tail of Windows 2000 / 2003 / 2008 and pre-systemd Linux. CSAT is built for the boxes nobody else helps you with. See [`docs/ROADMAP.md`](docs/ROADMAP.md) and the live [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) matrix.
+
 ## What it is not
 
 CSAT is not RMM. It is not a CMDB. It does not phone home, install agents, or require internet access. It collects metadata only — never credentials, secrets, or password hashes.

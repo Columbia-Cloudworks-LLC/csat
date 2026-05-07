@@ -3,9 +3,12 @@
 *.xlsx
 *.csv
 *.txt
+
+# Allow-list the things that ARE supposed to be tracked.
 !samples/**/*.json
 !docs/**/*.md
 !README.md
+!aggregator/requirements.txt
 
 # Python
 __pycache__/
